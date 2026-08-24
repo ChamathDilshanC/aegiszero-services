@@ -1,0 +1,11 @@
+package com.aegiszero.access;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication(scanBasePackages = "com.aegiszero")
+public class AccessServiceApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(AccessServiceApplication.class, args);
+    }
+}
