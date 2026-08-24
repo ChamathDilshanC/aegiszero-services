@@ -1,0 +1,77 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: audit-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:audit_db}?currentSchema=${DB_SCHEMA:public}
+    username: ${DB_USERNAME:aegiszero}
+    password: ${DB_PASSWORD:aegiszero}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:public}
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    # On Render there is exactly one Postgres database for all five services
+    # (the free plan gives you one, and its user can't CREATE DATABASE), so
+    # each service owns a schema inside it instead of a database of its own.
+    # Flyway creates the schema on first run and keeps its own
+    # flyway_schema_history inside it, so the services stay as isolated as
+    # they were with a database each. Unset -> `public`, which is what local
+    # docker-compose uses against its per-service databases.
+    schemas: ${DB_SCHEMA:public}
+    create-schemas: true
+
+  data:
+    redis:
+      # Carries domain events when aegiszero.events.backend=redis, on top of
+      # any other use. Spring Data Redis rejects an empty url outright (it is
+      # "invalid", not "unset"), so this falls back to a URL built from
+      # REDIS_HOST/REDIS_PORT rather than defaulting to blank. Render sets
+      # REDIS_URL directly (rediss:// implies TLS).
+      url: ${REDIS_URL:redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+    properties:
+      sasl:
+        mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+        jaas:
+          config: ${KAFKA_SASL_JAAS_CONFIG:}
+
+aegiszero:
+  # Which broker carries domain events.
+  #   kafka (default) - the real thing; docker-compose runs one locally.
+  #   redis           - Redis Streams instead, for hosts that have no
+  #                     reachable broker. Render's free plan is the reason
+  #                     this exists. See shared/common-messaging.
+  events:
+    backend: ${EVENT_BACKEND:kafka}
+  jwt:
+    secret: ${JWT_SECRET:change-this-secret-change-this-secret-change-this-secret}
+    issuer: aegiszero
+    audience: aegiszero-clients
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId}]"
