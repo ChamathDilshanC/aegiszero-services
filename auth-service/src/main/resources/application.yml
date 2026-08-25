@@ -73,9 +73,17 @@ aegiszero:
     audience: aegiszero-clients
     access-token-ttl-minutes: ${ACCESS_TOKEN_TTL_MINUTES:15}
     refresh-token-ttl-days: ${REFRESH_TOKEN_TTL_DAYS:14}
+  # Each entry accepts either a full URL (X_SERVICE_URL, what docker-compose and
+  # .env.example set) or just a host:port (X_SERVICE_HOSTPORT). The second form
+  # exists because Render appends a suffix to a service name when the plain name
+  # is taken - aegiszero-auth-service becomes aegiszero-auth-service-y415 - and a
+  # hardcoded internal URL then points at a host that does not resolve. Every
+  # call through the gateway failed with a 500 that way. render.yaml now fills
+  # the hostport in from the service itself, so the real name is used whatever
+  # Render decided to call it.
   services:
-    access-service-url: ${ACCESS_SERVICE_URL:http://localhost:8083}
-    security-service-url: ${SECURITY_SERVICE_URL:http://localhost:8084}
+    access-service-url: ${ACCESS_SERVICE_URL:http://${ACCESS_SERVICE_HOSTPORT:localhost:8083}}
+    security-service-url: ${SECURITY_SERVICE_URL:http://${SECURITY_SERVICE_HOSTPORT:localhost:8084}}
   internal-api:
     key: ${INTERNAL_API_KEY:dev-only-internal-key-not-for-production}
 
