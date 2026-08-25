@@ -40,6 +40,14 @@ spring:
       # REDIS_HOST/REDIS_PORT rather than defaulting to blank. Render sets
       # REDIS_URL directly (rediss:// implies TLS).
       url: ${REDIS_URL:redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}}
+      # Without these, Lettuce waits indefinitely. A Redis that accepts a
+      # socket but never completes the handshake would then hang startup
+      # forever rather than failing and letting the service come up
+      # degraded - and on a host that health-checks an HTTP endpoint, a
+      # service that never finishes starting is indistinguishable from a
+      # service that crashed.
+      connect-timeout: 3s
+      timeout: 3s
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}

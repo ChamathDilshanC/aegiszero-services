@@ -14,6 +14,14 @@ spring:
       # implies SSL automatically); render.yaml doesn't expose a standalone
       # password property, hence the URL rather than discrete host/port/pass.
       url: ${REDIS_URL:redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}}
+      # Without these, Lettuce waits indefinitely. A Redis that accepts a
+      # socket but never completes the handshake would then hang startup
+      # forever rather than failing and letting the service come up
+      # degraded - and on a host that health-checks an HTTP endpoint, a
+      # service that never finishes starting is indistinguishable from a
+      # service that crashed.
+      connect-timeout: 3s
+      timeout: 3s
 
   cloud:
     gateway:
