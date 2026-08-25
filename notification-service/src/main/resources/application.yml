@@ -72,6 +72,25 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      # Spring Boot contributes a MailHealthIndicator whenever a JavaMailSender
+      # bean exists, and it opens a real SMTP connection on every /actuator/health
+      # probe. Two reasons that is wrong here.
+      #
+      # Under email.provider=brevo-api - which is what Render runs, since its free
+      # tier blocks outbound SMTP entirely - it probes a transport this service
+      # never uses. SMTP_HOST is left at its localhost default, nothing is
+      # listening, and the indicator reports DOWN with
+      # `SMTPTransport.openServer ... ConnectException: Connection refused`.
+      # /actuator/health is the path Render health-checks, so a service that is
+      # working perfectly gets marked unhealthy and the deploy fails.
+      #
+      # And under email.provider=smtp it is still the wrong signal: sending is
+      # asynchronous and driven off events, so a relay being briefly unreachable
+      # says nothing about whether this service is healthy. Failing a deploy
+      # because a third-party relay blipped is worse than not knowing.
+      enabled: false
 
 logging:
   pattern:
