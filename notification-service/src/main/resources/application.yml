@@ -1,0 +1,78 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: notification-service
+
+  data:
+    redis:
+      # Carries domain events when aegiszero.events.backend=redis, on top of
+      # any other use. Spring Data Redis rejects an empty url outright (it is
+      # "invalid", not "unset"), so this falls back to a URL built from
+      # REDIS_HOST/REDIS_PORT rather than defaulting to blank. Render sets
+      # REDIS_URL directly (rediss:// implies TLS).
+      url: ${REDIS_URL:redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+    properties:
+      sasl:
+        mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+        jaas:
+          config: ${KAFKA_SASL_JAAS_CONFIG:}
+
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+
+  # Applies to the RestClient.Builder BrevoApiEmailSender is built from.
+  http:
+    client:
+      connect-timeout: 5s
+      read-timeout: 10s
+
+# smtp (default): local Mailhog, or any SMTP relay reachable from where this
+#   runs (e.g. Brevo SMTP outside Render).
+# brevo-api: HTTPS call to Brevo's REST API instead — the only option that
+#   works on Render's free tier, which blocks outbound SMTP ports entirely.
+email:
+  provider: ${EMAIL_PROVIDER:smtp}
+
+aegiszero:
+  # Which broker carries domain events.
+  #   kafka (default) - the real thing; docker-compose runs one locally.
+  #   redis           - Redis Streams instead, for hosts that have no
+  #                     reachable broker. Render's free plan is the reason
+  #                     this exists. See shared/common-messaging.
+  events:
+    backend: ${EVENT_BACKEND:kafka}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  mail-from: ${MAIL_FROM:no-reply@aegiszero.local}
+  mail-from-name: ${MAIL_FROM_NAME:AegisZero Security}
+  brevo:
+    api-key: ${BREVO_API_KEY:}
+    api-url: ${BREVO_API_URL:https://api.brevo.com/v3/smtp/email}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId}]"
