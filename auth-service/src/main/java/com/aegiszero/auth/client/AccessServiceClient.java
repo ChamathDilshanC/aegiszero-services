@@ -1,5 +1,6 @@
 package com.aegiszero.auth.client;
 
+import com.aegiszero.auth.client.dto.AssignRoleRequest;
 import com.aegiszero.auth.client.dto.AuthorizationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,5 +35,20 @@ public class AccessServiceClient {
             log.warn("access-service unreachable while resolving authorization for {}: {}", userId, ex.getMessage());
             return AuthorizationResponse.empty();
         }
+    }
+
+    /**
+     * Grants a role with no logged-in actor behind it — used when an admin
+     * access request is approved from an email link, where there is no JWT
+     * session to carry ROLE_ASSIGN. Throws on failure (unlike
+     * {@link #getAuthorization}) since the caller needs to know the grant
+     * didn't happen rather than silently proceeding as if it had.
+     */
+    public void assignRole(UUID userId, String roleName) {
+        accessServiceRestClient.post()
+                .uri("/api/access/internal/users/{userId}/roles", userId)
+                .body(new AssignRoleRequest(roleName))
+                .retrieve()
+                .toBodilessEntity();
     }
 }

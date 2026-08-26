@@ -42,6 +42,25 @@ public class UserRoleService {
         eventPublisher.roleAssigned(userId, roleName, actorId);
     }
 
+    /**
+     * Same as {@link #assignRole}, but a no-op instead of a 409 if the user
+     * already has the role. Used by system-initiated grants (e.g. an admin
+     * access request being approved) where the caller has no good way to
+     * check first and a double-fire (retry, double-click) must stay safe.
+     */
+    @Transactional
+    public void assignRoleIfMissing(UUID userId, String roleName, UUID actorId) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role '" + roleName + "' does not exist"));
+
+        if (userRoleRepository.findByUserIdAndRoleId(userId, role.getId()).isPresent()) {
+            return;
+        }
+
+        userRoleRepository.save(UserRole.builder().userId(userId).role(role).build());
+        eventPublisher.roleAssigned(userId, roleName, actorId);
+    }
+
     @Transactional
     public void removeRole(UUID userId, UUID roleId, UUID actorId) {
         UserRole userRole = userRoleRepository.findByUserIdAndRoleId(userId, roleId)

@@ -8,6 +8,10 @@ public record RegisterRequest(
         @NotBlank @Email String email,
         @NotBlank @Size(min = 12, message = "Password must be at least 12 characters") String password,
         @NotBlank String firstName,
-        @NotBlank String lastName
+        @NotBlank String lastName,
+        Boolean requestAdminAccess
 ) {
+    public boolean isRequestingAdminAccess() {
+        return Boolean.TRUE.equals(requestAdminAccess);
+    }
 }

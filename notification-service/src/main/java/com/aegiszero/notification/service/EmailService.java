@@ -39,7 +39,7 @@ public class EmailService {
                     null,
                     event.subject(),
                     templateService.renderBody(event),
-                    null
+                    templateService.renderHtmlBody(event)
             );
             emailSender.send(message);
             log.info("Sent '{}' notification email to {}", event.type(), event.recipientEmail());
