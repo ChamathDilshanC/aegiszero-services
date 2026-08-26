@@ -41,8 +41,8 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> search(String query, Pageable pageable) {
-        return PageResponse.from(userRepository.search(
-                (query == null || query.isBlank()) ? null : query, pageable).map(UserResponse::from));
+        String q = (query == null || query.isBlank()) ? "" : query.trim();
+        return PageResponse.from(userRepository.search(q, pageable).map(UserResponse::from));
     }
 
     @Transactional
