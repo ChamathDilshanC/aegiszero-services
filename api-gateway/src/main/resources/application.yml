@@ -26,8 +26,20 @@ spring:
   cloud:
     gateway:
       httpclient:
-        connect-timeout: 5000
-        response-timeout: 15s
+        # 15s was too tight for the free plan by a wide margin: every backend
+        # this proxies to sleeps after ~15 min idle, and a cold Spring Boot
+        # start alone has taken ~44s in this app (real number, from a prior
+        # deploy's logs) before it can even open a listening port - let alone
+        # answer a login that also has to wait on access-service and
+        # security-service, which may be cold too. A response that takes
+        # longer than 15s was never a broken request, just a sleeping one,
+        # and the caller saw a 504 as if it were.
+        #
+        # 120s covers the worst realistic case render.yaml's own comment
+        # already documents - "a couple of minutes" for a fully cold chain -
+        # without leaving a genuinely hung request waiting forever.
+        connect-timeout: 10000
+        response-timeout: 120s
 
 aegiszero:
   jwt:
